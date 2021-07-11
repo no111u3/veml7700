@@ -1,0 +1,32 @@
+[package]
+name = "veml7700"
+version = "0.1.1"
+edition = "2018"
+categories = ["embedded", "hardware-support", "no-std"]
+authors = ["Boris Vinogradov <no111u3@gmail.com>"]
+description = "Platform-agnostic Rust driver for the VEML7700 High Accuracy Ambient Light Sensor"
+documentation = "https://docs.rs/veml7700"
+keywords = ["no-std", "veml7700", "driver", "embedded", "i2c", "sensor", "embedded-hal-driver"]
+readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/no111u3/veml7700"
+exclude = [ "memory.x", ".cargo", "Embed.toml" ]
+
+[dependencies]
+embedded-hal = "0.2"
+
+
+[dev-dependencies]
+cortex-m = "0.6.2"
+cortex-m-rt = "0.6.12"
+panic-halt = "0.2.0"
+stm32f4xx-hal = { version = "0.8", features = ["rt", "stm32f401"]}
+rtt-target = { version = "0.2.0", features = ["cortex-m"] }
+panic-rtt-target = { version = "0.1.0", features = ["cortex-m"] }
+
+[profile.release]
+# Many of these settings are highly recommended or required for embedded work
+codegen-units = 1
+incremental = false
+debug = true
+lto = true
