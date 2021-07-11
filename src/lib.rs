@@ -29,15 +29,6 @@ pub enum Error<E> {
     I2C(E),
 }
 
-/// Result of measurement of all channels
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct AllChannelMeasurement {
-    /// ALS channel measurement.
-    pub als: u16,
-    /// White channel measurement.
-    pub white: u16,
-}
-
 const DEVICE_ADDRESS: u8 = 0x10;
 
 /// VEML7700 device driver.
