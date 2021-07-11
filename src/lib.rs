@@ -17,30 +17,16 @@
 #![deny(unsafe_code)]
 #![no_std]
 
-use embedded_hal::blocking::i2c;
+mod device_impl;
+mod types;
+
+pub use crate::types::{FaultCount, Gain, IntegrationTime, InterruptStatus, PowerSavingMode};
 
 /// All possible errors in this crate
 #[derive(Debug)]
 pub enum Error<E> {
     /// I²C bus error
     I2C(E),
-}
-
-/// Integration time
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum IntegrationTime {
-    /// 25 ms
-    _25ms,
-    /// 50 ms
-    _50ms,
-    /// 100 ms
-    _100ms,
-    /// 200 ms
-    _200ms,
-    /// 400 ms
-    _400ms,
-    /// 800 ms
-    _800ms,
 }
 
 /// Result of measurement of all channels
@@ -54,36 +40,17 @@ pub struct AllChannelMeasurement {
 
 const DEVICE_ADDRESS: u8 = 0x10;
 
-struct Register;
-
-impl Register {
-    const CONFIG: u8 = 0x00;
-    const ALS_WINDOW_HIGH: u8 = 0x01;
-    const ALS_WINDOW_LOW: u8 = 0x02;
-    const POWER_SAVE: u8 = 0x03;
-    const ALS: u8 = 0x04;
-    const WHITE: u8 = 0x05;
-    const ALS_INT: u8 = 0x06;
-}
-
 /// VEML7700 device driver.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Veml7700<I2C> {
     /// The concrete I²C device implementation.
     i2c: I2C,
+    config: Config,
+    gain: Gain,
+    it: IntegrationTime,
 }
 
-impl<I2C, E> Veml7700<I2C>
-where
-    I2C: i2c::Write<Error = E>,
-{
-    /// Create new instance of the VEML6040 device.
-    pub fn new(i2c: I2C) -> Self {
-        Veml7700 { i2c }
-    }
-
-    /// Destroy driver instance, return I²C bus instance.
-    pub fn destroy(self) -> I2C {
-        self.i2c
-    }
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+struct Config {
+    bits: u16,
 }
