@@ -1,6 +1,7 @@
+use crate::correction::{correct_high_lux, get_lux_raw_conversion_factor};
 use crate::{
-    Config, Error, FaultCount, Gain, IntegrationTime, InterruptStatus, PowerSavingMode, Veml7700,
-    DEVICE_ADDRESS,
+    calculate_raw_threshold_value, Config, Error, FaultCount, Gain, IntegrationTime,
+    InterruptStatus, PowerSavingMode, Veml7700, DEVICE_ADDRESS,
 };
 use embedded_hal::blocking::i2c;
 
@@ -144,6 +145,38 @@ where
         self.write_register(Register::ALS_WL, threshold)
     }
 
+    /// Set the ALS high threshold in lux.
+    ///
+    /// For values higher than 1000 lx and 1/4 or 1/8 gain,
+    /// the inverse of the compensation formula is applied (this involves
+    /// quite some math).
+    pub fn set_high_threshold_lux(&mut self, lux: f32) -> Result<(), Error<E>> {
+        let raw = self.calculate_raw_threshold_value(lux);
+        self.write_register(Register::ALS_WH, raw)
+    }
+
+    /// Set the ALS low threshold in lux.
+    ///
+    /// For values higher than 1000 lx and 1/4 or 1/8 gain,
+    /// the inverse of the compensation formula is applied (this involves
+    /// quite some math).
+    pub fn set_low_threshold_lux(&mut self, lux: f32) -> Result<(), Error<E>> {
+        let raw = self.calculate_raw_threshold_value(lux);
+        self.write_register(Register::ALS_WL, raw)
+    }
+
+    /// Calculate raw value for threshold applying compensation if necessary.
+    ///
+    /// This takes into consideration the configured integration time and gain
+    /// and compensates the lux value if necessary.
+    ///
+    /// For values higher than 1000 lx and 1/4 or 1/8 gain, the inverse of the
+    /// compensation formula is applied. This involves quite some math so it
+    /// may be interesting to calculate the threshold values ahead of time.
+    pub fn calculate_raw_threshold_value(&self, lux: f32) -> u16 {
+        calculate_raw_threshold_value(self.it, self.gain, lux)
+    }
+
     /// Enable the power-saving mode
     pub fn enable_power_saving(&mut self, psm: PowerSavingMode) -> Result<(), Error<E>> {
         let mask = match psm {
@@ -196,6 +229,28 @@ where
         self.read_register(Register::ALS)
     }
 
+    /// Read ALS high resolution output data converted to lux
+    ///
+    /// For values higher than 1000 lx and 1/4 or 1/8 gain,
+    /// the following compensation formula is applied:
+    /// `lux = 6.0135e-13*(lux^4) - 9.3924e-9*(lux^3) + 8.1488e-5*(lux^2) + 1.0023*lux`
+    pub fn read_lux(&mut self) -> Result<f32, Error<E>> {
+        let raw = self.read_register(Register::ALS)?;
+        Ok(self.convert_raw_als_to_lux(raw))
+    }
+
+    /// Calculate lux value for a raw ALS measurement.
+    ///
+    /// This takes into consideration the configured integration time and gain
+    /// and compensates the lux value if necessary.
+    ///
+    /// For values higher than 1000 lx and 1/4 or 1/8 gain,
+    /// the following compensation formula is applied:
+    /// `lux = 6.0135e-13*(lux^4) - 9.3924e-9*(lux^3) + 8.1488e-5*(lux^2) + 1.0023*lux`
+    pub fn convert_raw_als_to_lux(&self, raw_als: u16) -> f32 {
+        convert_raw_als_to_lux(self.it, self.gain, raw_als)
+    }
+
     /// Read white channel measurement
     pub fn read_white(&mut self) -> Result<u16, Error<E>> {
         self.read_register(Register::WHITE)
@@ -207,5 +262,20 @@ where
             .write_read(DEVICE_ADDRESS, &[register], &mut data)
             .map_err(Error::I2C)
             .and(Ok(u16::from(data[0]) | u16::from(data[1]) << 8))
+    }
+}
+
+/// Calculate lux value for a raw ALS measurement.
+///
+/// For values higher than 1000 lx and 1/4 or 1/8 gain,
+/// the following compensation formula is applied:
+/// `lux = 6.0135e-13*(lux^4) - 9.3924e-9*(lux^3) + 8.1488e-5*(lux^2) + 1.0023*lux`
+pub fn convert_raw_als_to_lux(it: IntegrationTime, gain: Gain, raw_als: u16) -> f32 {
+    let factor = get_lux_raw_conversion_factor(it, gain);
+    let lux = f32::from(raw_als) * f32::from(factor);
+    if (gain == Gain::OneQuarter || gain == Gain::OneEighth) && lux > 1000.0 {
+        correct_high_lux(lux) as f32
+    } else {
+        lux as f32
     }
 }

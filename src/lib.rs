@@ -17,8 +17,12 @@
 #![deny(unsafe_code)]
 #![no_std]
 
+mod correction;
 mod device_impl;
 mod types;
+
+pub use crate::correction::calculate_raw_threshold_value;
+pub use crate::device_impl::convert_raw_als_to_lux;
 
 pub use crate::types::{FaultCount, Gain, IntegrationTime, InterruptStatus, PowerSavingMode};
 
