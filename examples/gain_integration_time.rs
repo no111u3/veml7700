@@ -64,11 +64,11 @@ fn main() -> ! {
 
     let mut delay = Delay::new(cp.SYST, clocks);
 
-    veml7700_device.enable().unwrap();
     veml7700_device.set_gain(Gain::OneQuarter).unwrap();
     veml7700_device
         .set_integration_time(IntegrationTime::_200ms)
         .unwrap();
+    veml7700_device.enable().unwrap();
 
     loop {
         led.set_high().ok();
