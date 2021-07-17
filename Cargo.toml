@@ -1,14 +1,14 @@
 [package]
 name = "veml7700"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2018"
 categories = ["embedded", "hardware-support", "no-std"]
-authors = ["Boris Vinogradov <no111u3@gmail.com>"]
+authors = ["Diego Barrios Romero <eldruin@gmail.com>", "Boris Vinogradov <no111u3@gmail.com>"]
 description = "Platform-agnostic Rust driver for the VEML7700 High Accuracy Ambient Light Sensor"
 documentation = "https://docs.rs/veml7700"
 keywords = ["als", "ambient", "light", "sensor", "embedded-hal-driver"]
 readme = "README.md"
-license = "Apache-2.0"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/no111u3/veml7700"
 exclude = [ "memory.x", ".cargo", "Embed.toml" ]
 

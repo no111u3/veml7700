@@ -4,7 +4,7 @@
 
 This is a platform agnostic Rust driver for the VEML7700 high accuracy ambient
 light sensors using the [`embedded-hal`] traits. It's alternative version of
-veml6030 crate that uses the [`micromath`] library and 32 bit precision for sensor correction.
+[`veml6030`] crate that uses the [`micromath`] library and 32 bit precision for sensor correction.
 
 This driver allows you to:
 - Enable/disable the device. See: `enable()`.
@@ -64,4 +64,5 @@ be dual licensed as above, without any additional terms or conditions.
 
 [`embedded-hal`]: https://github.com/rust-embedded/embedded-hal
 [`micromath`]: https://github.com/tarcieri/micromath
+[`velm6030`]: https://github.com/eldruin/veml6030-rs
 
