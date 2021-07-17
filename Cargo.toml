@@ -1,6 +1,6 @@
 [package]
 name = "veml7700"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2018"
 categories = ["embedded", "hardware-support", "no-std"]
 authors = ["Diego Barrios Romero <eldruin@gmail.com>", "Boris Vinogradov <no111u3@gmail.com>"]
