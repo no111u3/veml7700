@@ -64,5 +64,5 @@ be dual licensed as above, without any additional terms or conditions.
 
 [`embedded-hal`]: https://github.com/rust-embedded/embedded-hal
 [`micromath`]: https://github.com/tarcieri/micromath
-[`velm6030`]: https://github.com/eldruin/veml6030-rs
+[`veml6030`]: https://github.com/eldruin/veml6030-rs
 
