@@ -63,4 +63,5 @@ for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 be dual licensed as above, without any additional terms or conditions.
 
 [`embedded-hal`]: https://github.com/rust-embedded/embedded-hal
+[`micromath`]: https://github.com/tarcieri/micromath
 
