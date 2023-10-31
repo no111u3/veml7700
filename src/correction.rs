@@ -45,9 +45,9 @@ pub(crate) fn correct_high_lux(lux: f32) -> f32 {
 }
 
 fn inverse_high_lux_correction(lux: f32) -> f32 {
-    // Inverse of the polinomial used to correct for lux > 1000.
+    // Inverse of the polynomial used to correct for lux > 1000.
     // `y = 6.0135e-13*(x^4) - 9.3924e-9*(x^3) + 8.1488e-5*(x^2) + 1.0023*x`.
-    // This runs into underflow/overlow issues if trying to solve it directly.
+    // This runs into underflow/overflow issues if trying to solve it directly.
     // However, it can be solved for unknown coefficients and then
     // we put in the values.
     -C2 / (4.0 * C3)

@@ -15,6 +15,7 @@
         "MicroMath",
         "Nucleo",
         "photodiode",
+        "powf",
         "rustflags",
         "thumbv",
         "Tlink",
