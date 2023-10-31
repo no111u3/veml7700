@@ -74,6 +74,11 @@ pub enum Error<E> {
     /// I²C bus error
     I2C(E),
 }
+impl<E> From<E> for Error<E> {
+    fn from(other: E) -> Self {
+        Error::I2C(other)
+    }
+}
 
 const DEVICE_ADDRESS: u8 = 0x10;
 
