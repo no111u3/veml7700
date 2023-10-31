@@ -70,8 +70,18 @@ fn main() -> ! {
         led.set_high().ok();
         // current light state in lux and white light state
         let white = veml7700_device.read_white().unwrap();
-        let lux = veml7700_device.read_lux().unwrap();
-        writeln!(tx, "White: {}, Lux: {:2}\r", white, lux).ok();
+
+        #[cfg(feature = "lux_as_f32")]
+        {
+            let lux = veml7700_device.read_lux().unwrap();
+            writeln!(tx, "White: {}, Lux: {:2}\r", white, lux).ok();
+        }
+        #[cfg(not(feature = "lux_as_f32"))]
+        {
+            let raw = veml7700_device.read_raw().unwrap();
+            writeln!(tx, "White: {}, Raw: {:#06x}", white, raw).ok();
+        }
+
         led.set_low().ok();
         delay.delay_ms(100u16);
     }

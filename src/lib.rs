@@ -55,11 +55,15 @@
 #![deny(unsafe_code, missing_docs)]
 #![no_std]
 
+#[cfg(feature = "lux_as_f32")]
 mod correction;
+
 mod device_impl;
 mod types;
 
+#[cfg(feature = "lux_as_f32")]
 pub use crate::correction::calculate_raw_threshold_value;
+#[cfg(feature = "lux_as_f32")]
 pub use crate::device_impl::convert_raw_als_to_lux;
 
 pub use crate::types::{FaultCount, Gain, IntegrationTime, InterruptStatus, PowerSavingMode};

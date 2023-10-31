@@ -69,8 +69,16 @@ fn main() -> ! {
         .set_integration_time(IntegrationTime::_200ms)
         .unwrap();
     // this will compensate the value automatically before setting it
-    veml7700_device.set_high_threshold_lux(10000.0).unwrap();
-    veml7700_device.set_low_threshold_lux(100.0).unwrap();
+    #[cfg(feature = "lux_as_f32")]
+    {
+        veml7700_device.set_high_threshold_lux(10000.0).unwrap();
+        veml7700_device.set_low_threshold_lux(100.0).unwrap();
+    }
+    #[cfg(not(feature = "lux_as_f32"))]
+    {
+        veml7700_device.set_high_threshold_raw(0xffff).unwrap(); // TODO: precalculate value
+        veml7700_device.set_low_threshold_raw(0x0000).unwrap(); // TODO: precalculate value
+    }
     veml7700_device.set_fault_count(FaultCount::Four).unwrap();
     veml7700_device.enable_interrupts().unwrap();
     veml7700_device.enable().unwrap();
@@ -79,8 +87,17 @@ fn main() -> ! {
         led.set_high().ok();
         // current light state in lux and white light state
         let white = veml7700_device.read_white().unwrap();
-        let lux = veml7700_device.read_lux().unwrap();
-        writeln!(tx, "White: {}, Lux: {:2}\r", white, lux).ok();
+
+        #[cfg(feature = "lux_as_f32")]
+        {
+            let lux = veml7700_device.read_lux().unwrap();
+            writeln!(tx, "White: {}, Lux: {:2}\r", white, lux).ok();
+        }
+        #[cfg(not(feature = "lux_as_f32"))]
+        {
+            let raw = veml7700_device.read_raw().unwrap();
+            writeln!(tx, "White: {}, Raw: {:#06x}", white, raw).ok();
+        }
         let status = veml7700_device.read_interrupt_status().unwrap();
         if status.was_too_high {
             writeln!(tx, "Too high ambient\r").ok();

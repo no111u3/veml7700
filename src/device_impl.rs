@@ -1,7 +1,10 @@
+#[cfg(feature = "lux_as_f32")]
+use crate::calculate_raw_threshold_value;
+#[cfg(feature = "lux_as_f32")]
 use crate::correction::{correct_high_lux, get_lux_raw_conversion_factor};
 use crate::{
-    calculate_raw_threshold_value, Config, Error, FaultCount, Gain, IntegrationTime,
-    InterruptStatus, PowerSavingMode, Veml7700, DEVICE_ADDRESS,
+    Config, Error, FaultCount, Gain, IntegrationTime, InterruptStatus, PowerSavingMode, Veml7700,
+    DEVICE_ADDRESS,
 };
 use embedded_hal::blocking::i2c;
 
@@ -150,19 +153,22 @@ where
     /// For values higher than 1000 lx and 1/4 or 1/8 gain,
     /// the inverse of the compensation formula is applied (this involves
     /// quite some math).
+    #[cfg(feature = "lux_as_f32")]
     pub fn set_high_threshold_lux(&mut self, lux: f32) -> Result<(), Error<E>> {
         let raw = self.calculate_raw_threshold_value(lux);
-        self.write_register(Register::ALS_WH, raw)
+        self.set_high_threshold_raw(raw)
     }
+    // TODO make a const-able version for pre-calculating the raw-threshold_lux
 
     /// Set the ALS low threshold in lux.
     ///
     /// For values higher than 1000 lx and 1/4 or 1/8 gain,
     /// the inverse of the compensation formula is applied (this involves
     /// quite some math).
+    #[cfg(feature = "lux_as_f32")]
     pub fn set_low_threshold_lux(&mut self, lux: f32) -> Result<(), Error<E>> {
         let raw = self.calculate_raw_threshold_value(lux);
-        self.write_register(Register::ALS_WL, raw)
+        self.set_low_threshold_raw(raw)
     }
 
     /// Calculate raw value for threshold applying compensation if necessary.
@@ -173,6 +179,7 @@ where
     /// For values higher than 1000 lx and 1/4 or 1/8 gain, the inverse of the
     /// compensation formula is applied. This involves quite some math so it
     /// may be interesting to calculate the threshold values ahead of time.
+    #[cfg(feature = "lux_as_f32")]
     pub fn calculate_raw_threshold_value(&self, lux: f32) -> u16 {
         calculate_raw_threshold_value(self.it, self.gain, lux)
     }
@@ -234,6 +241,7 @@ where
     /// For values higher than 1000 lx and 1/4 or 1/8 gain,
     /// the following compensation formula is applied:
     /// `lux = 6.0135e-13*(lux^4) - 9.3924e-9*(lux^3) + 8.1488e-5*(lux^2) + 1.0023*lux`
+    #[cfg(feature = "lux_as_f32")]
     pub fn read_lux(&mut self) -> Result<f32, Error<E>> {
         let raw = self.read_register(Register::ALS)?;
         Ok(self.convert_raw_als_to_lux(raw))
@@ -247,6 +255,7 @@ where
     /// For values higher than 1000 lx and 1/4 or 1/8 gain,
     /// the following compensation formula is applied:
     /// `lux = 6.0135e-13*(lux^4) - 9.3924e-9*(lux^3) + 8.1488e-5*(lux^2) + 1.0023*lux`
+    #[cfg(feature = "lux_as_f32")]
     pub fn convert_raw_als_to_lux(&self, raw_als: u16) -> f32 {
         convert_raw_als_to_lux(self.it, self.gain, raw_als)
     }
@@ -270,6 +279,7 @@ where
 /// For values higher than 1000 lx and 1/4 or 1/8 gain,
 /// the following compensation formula is applied:
 /// `lux = 6.0135e-13*(lux^4) - 9.3924e-9*(lux^3) + 8.1488e-5*(lux^2) + 1.0023*lux`
+#[cfg(feature = "lux_as_f32")]
 pub fn convert_raw_als_to_lux(it: IntegrationTime, gain: Gain, raw_als: u16) -> f32 {
     let factor = get_lux_raw_conversion_factor(it, gain);
     let lux = f32::from(raw_als) * f32::from(factor);
