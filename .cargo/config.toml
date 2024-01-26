@@ -4,8 +4,4 @@ rustflags = ["-C", "link-arg=-Tlink.x"]
 [target.thumbv7em-none-eabihf]
 rustflags = ["-C", "link-arg=-Tlink.x"]
 
-[build.'cfg(not(feature = "lux_as_f32"))']
-target = "thumbv7em-none-eabi"
-
-[build.'cfg(feature = "lux_as_f32")']
 target = "thumbv7em-none-eabihf"

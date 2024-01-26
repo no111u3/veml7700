@@ -1,5 +1,6 @@
 use crate::{Gain, IntegrationTime};
 
+#[cfg(feature = "lux_as_f32")]
 use micromath::F32Ext;
 
 /// Calculate raw value for threshold applying compensation if necessary.
