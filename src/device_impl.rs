@@ -1,9 +1,12 @@
+#[cfg(feature = "lux_as_f32")]
+use crate::calculate_raw_threshold_value;
+#[cfg(feature = "lux_as_f32")]
 use crate::correction::{correct_high_lux, get_lux_raw_conversion_factor};
 use crate::{
-    calculate_raw_threshold_value, Config, Error, FaultCount, Gain, IntegrationTime,
-    InterruptStatus, PowerSavingMode, Veml7700, DEVICE_ADDRESS,
+    Config, Error, FaultCount, Gain, IntegrationTime, InterruptStatus, PowerSavingMode, Veml7700,
+    DEVICE_ADDRESS,
 };
-use embedded_hal::blocking::i2c;
+use embedded_hal::i2c::{ErrorType, I2c, SevenBitAddress};
 
 struct Register;
 impl Register {
@@ -38,9 +41,10 @@ impl Config {
     }
 }
 
-impl<I2C, E> Veml7700<I2C>
+impl<I2C> Veml7700<I2C>
 where
-    I2C: i2c::Write<Error = E>,
+    I2C: I2c<SevenBitAddress>,
+    I2C::Error: Into<Error<I2C::Error>>,
 {
     /// Create new instance of the VEML6040 device.
     pub fn new(i2c: I2C) -> Self {
@@ -60,28 +64,29 @@ where
     }
 }
 
-impl<I2C, E> Veml7700<I2C>
+impl<I2C> Veml7700<I2C>
 where
-    I2C: i2c::Write<Error = E>,
+    I2C: I2c<SevenBitAddress>,
+    I2C::Error: Into<Error<I2C::Error>>,
 {
     /// Enable the device.
     ///
     /// Note that when activating the sensor a wait time of 4 ms should be
     /// observed before the first measurement is picked up to allow for a
     /// correct start of the signal processor and oscillator.
-    pub fn enable(&mut self) -> Result<(), Error<E>> {
+    pub fn enable(&mut self) -> Result<(), Error<I2C::Error>> {
         let config = self.config.with_low(BitFlags::ALS_SD);
         self.set_config(config)
     }
 
     /// Disable the device (shutdown).
-    pub fn disable(&mut self) -> Result<(), Error<E>> {
+    pub fn disable(&mut self) -> Result<(), Error<I2C::Error>> {
         let config = self.config.with_high(BitFlags::ALS_SD);
         self.set_config(config)
     }
 
     /// Set the integration time.
-    pub fn set_integration_time(&mut self, it: IntegrationTime) -> Result<(), Error<E>> {
+    pub fn set_integration_time(&mut self, it: IntegrationTime) -> Result<(), Error<I2C::Error>> {
         let mask = match it {
             IntegrationTime::_25ms => 0b1100,
             IntegrationTime::_50ms => 0b1000,
@@ -97,7 +102,7 @@ where
     }
 
     /// Set the gain.
-    pub fn set_gain(&mut self, gain: Gain) -> Result<(), Error<E>> {
+    pub fn set_gain(&mut self, gain: Gain) -> Result<(), Error<I2C::Error>> {
         let mask = match gain {
             Gain::One => 0,
             Gain::Two => 1,
@@ -112,7 +117,7 @@ where
 
     /// Set the number of times a threshold crossing must happen consecutively
     /// to trigger an interrupt.
-    pub fn set_fault_count(&mut self, fc: FaultCount) -> Result<(), Error<E>> {
+    pub fn set_fault_count(&mut self, fc: FaultCount) -> Result<(), Error<I2C::Error>> {
         let mask = match fc {
             FaultCount::One => 0,
             FaultCount::Two => 1,
@@ -124,25 +129,25 @@ where
     }
 
     /// Enable interrupt generation.
-    pub fn enable_interrupts(&mut self) -> Result<(), Error<E>> {
+    pub fn enable_interrupts(&mut self) -> Result<(), Error<I2C::Error>> {
         let config = self.config.with_high(BitFlags::ALS_INT_EN);
         self.set_config(config)
     }
 
     /// Disable interrupt generation.
-    pub fn disable_interrupts(&mut self) -> Result<(), Error<E>> {
+    pub fn disable_interrupts(&mut self) -> Result<(), Error<I2C::Error>> {
         let config = self.config.with_low(BitFlags::ALS_INT_EN);
         self.set_config(config)
     }
 
     /// Set the ALS high threshold in raw format
-    pub fn set_high_threshold_raw(&mut self, threshold: u16) -> Result<(), Error<E>> {
-        self.write_register(Register::ALS_WH, threshold)
+    pub fn set_high_threshold_raw(&mut self, threshold: u16) -> Result<(), Error<I2C::Error>> {
+        Ok(self.write_register(Register::ALS_WH, threshold)?)
     }
 
     /// Set the ALS low threshold in raw format
-    pub fn set_low_threshold_raw(&mut self, threshold: u16) -> Result<(), Error<E>> {
-        self.write_register(Register::ALS_WL, threshold)
+    pub fn set_low_threshold_raw(&mut self, threshold: u16) -> Result<(), Error<I2C::Error>> {
+        Ok(self.write_register(Register::ALS_WL, threshold)?)
     }
 
     /// Set the ALS high threshold in lux.
@@ -150,19 +155,22 @@ where
     /// For values higher than 1000 lx and 1/4 or 1/8 gain,
     /// the inverse of the compensation formula is applied (this involves
     /// quite some math).
-    pub fn set_high_threshold_lux(&mut self, lux: f32) -> Result<(), Error<E>> {
+    #[cfg(feature = "lux_as_f32")]
+    pub fn set_high_threshold_lux(&mut self, lux: f32) -> Result<(), Error<I2C::Error>> {
         let raw = self.calculate_raw_threshold_value(lux);
-        self.write_register(Register::ALS_WH, raw)
+        self.set_high_threshold_raw(raw)
     }
+    // TODO make a const-able version for pre-calculating the raw-threshold_lux
 
     /// Set the ALS low threshold in lux.
     ///
     /// For values higher than 1000 lx and 1/4 or 1/8 gain,
     /// the inverse of the compensation formula is applied (this involves
     /// quite some math).
-    pub fn set_low_threshold_lux(&mut self, lux: f32) -> Result<(), Error<E>> {
+    #[cfg(feature = "lux_as_f32")]
+    pub fn set_low_threshold_lux(&mut self, lux: f32) -> Result<(), Error<I2C::Error>> {
         let raw = self.calculate_raw_threshold_value(lux);
-        self.write_register(Register::ALS_WL, raw)
+        self.set_low_threshold_raw(raw)
     }
 
     /// Calculate raw value for threshold applying compensation if necessary.
@@ -173,12 +181,13 @@ where
     /// For values higher than 1000 lx and 1/4 or 1/8 gain, the inverse of the
     /// compensation formula is applied. This involves quite some math so it
     /// may be interesting to calculate the threshold values ahead of time.
+    #[cfg(feature = "lux_as_f32")]
     pub fn calculate_raw_threshold_value(&self, lux: f32) -> u16 {
         calculate_raw_threshold_value(self.it, self.gain, lux)
     }
 
     /// Enable the power-saving mode
-    pub fn enable_power_saving(&mut self, psm: PowerSavingMode) -> Result<(), Error<E>> {
+    pub fn enable_power_saving(&mut self, psm: PowerSavingMode) -> Result<(), Error<I2C::Error>> {
         let mask = match psm {
             PowerSavingMode::One => 0,
             PowerSavingMode::Two => 1,
@@ -186,37 +195,41 @@ where
             PowerSavingMode::Four => 3,
         };
         let value = BitFlags::PSM_EN | mask << 1;
-        self.write_register(Register::PSM, value)
+        Ok(self.write_register(Register::PSM, value)?)
     }
 
     /// Disable the power-saving mode
-    pub fn disable_power_saving(&mut self) -> Result<(), Error<E>> {
-        self.write_register(Register::PSM, 0)
+    pub fn disable_power_saving(&mut self) -> Result<(), Error<I2C::Error>> {
+        Ok(self.write_register(Register::PSM, 0)?)
     }
 
-    fn set_config(&mut self, config: Config) -> Result<(), Error<E>> {
+    fn set_config(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
         self.write_register(Register::ALS_CONF, config.bits)?;
         self.config = config;
         Ok(())
     }
 
-    fn write_register(&mut self, register: u8, value: u16) -> Result<(), Error<E>> {
+    fn write_register(
+        &mut self,
+        register: u8,
+        value: u16,
+    ) -> Result<(), <I2C as ErrorType>::Error> {
         self.i2c
             .write(DEVICE_ADDRESS, &[register, value as u8, (value >> 8) as u8])
-            .map_err(Error::I2C)
     }
 }
 
-impl<I2C, E> Veml7700<I2C>
+impl<I2C> Veml7700<I2C>
 where
-    I2C: i2c::WriteRead<Error = E>,
+    I2C: I2c<SevenBitAddress>,
+    I2C::Error: Into<Error<I2C::Error>>,
 {
     /// Read whether an interrupt has occurred.
     ///
     /// Note that the interrupt status is updated at the same rate as the
     /// measurements. Once triggered, flags will stay true until a measurement
     /// is taken which does not exceed the threshold.
-    pub fn read_interrupt_status(&mut self) -> Result<InterruptStatus, Error<E>> {
+    pub fn read_interrupt_status(&mut self) -> Result<InterruptStatus, Error<I2C::Error>> {
         let data = self.read_register(Register::ALS_INT)?;
         Ok(InterruptStatus {
             was_too_low: (data & BitFlags::INT_TH_LOW) != 0,
@@ -225,7 +238,7 @@ where
     }
 
     /// Read ALS high resolution output data in raw format
-    pub fn read_raw(&mut self) -> Result<u16, Error<E>> {
+    pub fn read_raw(&mut self) -> Result<u16, Error<I2C::Error>> {
         self.read_register(Register::ALS)
     }
 
@@ -234,7 +247,8 @@ where
     /// For values higher than 1000 lx and 1/4 or 1/8 gain,
     /// the following compensation formula is applied:
     /// `lux = 6.0135e-13*(lux^4) - 9.3924e-9*(lux^3) + 8.1488e-5*(lux^2) + 1.0023*lux`
-    pub fn read_lux(&mut self) -> Result<f32, Error<E>> {
+    #[cfg(feature = "lux_as_f32")]
+    pub fn read_lux(&mut self) -> Result<f32, Error<I2C::Error>> {
         let raw = self.read_register(Register::ALS)?;
         Ok(self.convert_raw_als_to_lux(raw))
     }
@@ -247,16 +261,17 @@ where
     /// For values higher than 1000 lx and 1/4 or 1/8 gain,
     /// the following compensation formula is applied:
     /// `lux = 6.0135e-13*(lux^4) - 9.3924e-9*(lux^3) + 8.1488e-5*(lux^2) + 1.0023*lux`
+    #[cfg(feature = "lux_as_f32")]
     pub fn convert_raw_als_to_lux(&self, raw_als: u16) -> f32 {
         convert_raw_als_to_lux(self.it, self.gain, raw_als)
     }
 
     /// Read white channel measurement
-    pub fn read_white(&mut self) -> Result<u16, Error<E>> {
+    pub fn read_white(&mut self) -> Result<u16, Error<I2C::Error>> {
         self.read_register(Register::WHITE)
     }
 
-    fn read_register(&mut self, register: u8) -> Result<u16, Error<E>> {
+    fn read_register(&mut self, register: u8) -> Result<u16, Error<I2C::Error>> {
         let mut data = [0; 2];
         self.i2c
             .write_read(DEVICE_ADDRESS, &[register], &mut data)
@@ -270,12 +285,13 @@ where
 /// For values higher than 1000 lx and 1/4 or 1/8 gain,
 /// the following compensation formula is applied:
 /// `lux = 6.0135e-13*(lux^4) - 9.3924e-9*(lux^3) + 8.1488e-5*(lux^2) + 1.0023*lux`
+#[cfg(feature = "lux_as_f32")]
 pub fn convert_raw_als_to_lux(it: IntegrationTime, gain: Gain, raw_als: u16) -> f32 {
     let factor = get_lux_raw_conversion_factor(it, gain);
-    let lux = f32::from(raw_als) * f32::from(factor);
+    let lux = f32::from(raw_als) * factor;
     if (gain == Gain::OneQuarter || gain == Gain::OneEighth) && lux > 1000.0 {
-        correct_high_lux(lux) as f32
+        correct_high_lux(lux)
     } else {
-        lux as f32
+        lux
     }
 }

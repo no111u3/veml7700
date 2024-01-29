@@ -55,11 +55,15 @@
 #![deny(unsafe_code, missing_docs)]
 #![no_std]
 
+#[cfg(feature = "lux_as_f32")]
 mod correction;
+
 mod device_impl;
 mod types;
 
+#[cfg(feature = "lux_as_f32")]
 pub use crate::correction::calculate_raw_threshold_value;
+#[cfg(feature = "lux_as_f32")]
 pub use crate::device_impl::convert_raw_als_to_lux;
 
 pub use crate::types::{FaultCount, Gain, IntegrationTime, InterruptStatus, PowerSavingMode};
@@ -69,6 +73,11 @@ pub use crate::types::{FaultCount, Gain, IntegrationTime, InterruptStatus, Power
 pub enum Error<E> {
     /// I²C bus error
     I2C(E),
+}
+impl<E> From<E> for Error<E> {
+    fn from(other: E) -> Self {
+        Error::I2C(other)
+    }
 }
 
 const DEVICE_ADDRESS: u8 = 0x10;

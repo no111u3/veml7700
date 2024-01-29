@@ -1,5 +1,6 @@
 use crate::{Gain, IntegrationTime};
 
+#[cfg(feature = "lux_as_f32")]
 use micromath::F32Ext;
 
 /// Calculate raw value for threshold applying compensation if necessary.
@@ -10,10 +11,10 @@ use micromath::F32Ext;
 pub fn calculate_raw_threshold_value(it: IntegrationTime, gain: Gain, lux: f32) -> u16 {
     let factor = get_lux_raw_conversion_factor(it, gain);
     if (gain == Gain::OneQuarter || gain == Gain::OneEighth) && lux > 1000.0 {
-        let lux = inverse_high_lux_correction(f32::from(lux));
-        (lux / f32::from(factor)) as u16
+        let lux = inverse_high_lux_correction(lux);
+        (lux / factor) as u16
     } else {
-        (f32::from(lux) / f32::from(factor)) as u16
+        (lux / factor) as u16
     }
 }
 
@@ -45,9 +46,9 @@ pub(crate) fn correct_high_lux(lux: f32) -> f32 {
 }
 
 fn inverse_high_lux_correction(lux: f32) -> f32 {
-    // Inverse of the polinomial used to correct for lux > 1000.
+    // Inverse of the polynomial used to correct for lux > 1000.
     // `y = 6.0135e-13*(x^4) - 9.3924e-9*(x^3) + 8.1488e-5*(x^2) + 1.0023*x`.
-    // This runs into underflow/overlow issues if trying to solve it directly.
+    // This runs into underflow/overflow issues if trying to solve it directly.
     // However, it can be solved for unknown coefficients and then
     // we put in the values.
     -C2 / (4.0 * C3)

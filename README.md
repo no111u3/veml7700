@@ -1,4 +1,5 @@
 # Rust VEML7700 High Accuracy Ambient Light Sensor Driver
+
 [![crates.io](https://img.shields.io/crates/v/veml7700.svg)](https://crates.io/crates/veml7700)
 [![Docs](https://docs.rs/veml7700/badge.svg)](https://docs.rs/veml7700)
 
@@ -7,6 +8,7 @@ light sensors using the [`embedded-hal`] traits. It's alternative version of
 [`veml6030`] crate that uses the [`micromath`] library and 32 bit precision for sensor correction.
 
 This driver allows you to:
+
 - Enable/disable the device. See: `enable()`.
 - Read the measured lux value. See: `read_lux()`.
 - Read the white channel measurement. See: `read_white()`.
@@ -23,7 +25,7 @@ This driver allows you to:
 
 ## The device
 
-Vishay's VEML7700 are high accuracy ambient light digital 16-bit
+The Vishay VEML7700 is a high accuracy ambient light digital 16-bit
 resolution sensor in a miniature transparent package. It includes
 a high sensitive photodiode, a low noise amplifier, a 16-bit A/D converter
 and support an easy to use I2C bus communication interface and additional
@@ -33,6 +35,7 @@ The ambient light result is as digital value available.
 Datasheet:[VEML7700](https://www.vishay.com/docs/84286/veml7700.pdf)
 
 Application Note:
+
 - [Designing the VEML7700 into an application](https://www.vishay.com/docs/84323/designingveml7700.pdf)
 
 ## Usage
@@ -51,10 +54,10 @@ For questions, issues, feature requests, and other changes, please file an
 
 Licensed under either of
 
- * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
-   http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or
-   http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
+   <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or
+   <http://opensource.org/licenses/MIT>)
 
 at your option.
 
@@ -67,4 +70,3 @@ be dual licensed as above, without any additional terms or conditions.
 [`embedded-hal`]: https://github.com/rust-embedded/embedded-hal
 [`micromath`]: https://github.com/tarcieri/micromath
 [`veml6030`]: https://github.com/eldruin/veml6030-rs
-
