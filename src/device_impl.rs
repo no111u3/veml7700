@@ -6,8 +6,7 @@ use crate::{
     Config, Error, FaultCount, Gain, IntegrationTime, InterruptStatus, PowerSavingMode, Veml7700,
     DEVICE_ADDRESS,
 };
-use embedded_hal_async::i2c::{ErrorType, I2c, SevenBitAddress};
-use maybe_async::maybe_async;
+use embedded_hal::i2c::{ErrorType, I2c, SevenBitAddress};
 
 struct Register;
 impl Register {
@@ -75,22 +74,19 @@ where
     /// Note that when activating the sensor a wait time of 4 ms should be
     /// observed before the first measurement is picked up to allow for a
     /// correct start of the signal processor and oscillator.
-    #[maybe_async]
-    pub async fn enable(&mut self) -> Result<(), Error<I2C::Error>> {
+    pub fn enable(&mut self) -> Result<(), Error<I2C::Error>> {
         let config = self.config.with_low(BitFlags::ALS_SD);
-        self.set_config(config).await
+        self.set_config(config)
     }
 
     /// Disable the device (shutdown).
-    #[maybe_async]
-    pub async fn disable(&mut self) -> Result<(), Error<I2C::Error>> {
+    pub fn disable(&mut self) -> Result<(), Error<I2C::Error>> {
         let config = self.config.with_high(BitFlags::ALS_SD);
-        self.set_config(config).await
+        self.set_config(config)
     }
 
     /// Set the integration time.
-    #[maybe_async]
-    pub async fn set_integration_time(&mut self, it: IntegrationTime) -> Result<(), Error<I2C::Error>> {
+    pub fn set_integration_time(&mut self, it: IntegrationTime) -> Result<(), Error<I2C::Error>> {
         let mask = match it {
             IntegrationTime::_25ms => 0b1100,
             IntegrationTime::_50ms => 0b1000,
@@ -100,14 +96,13 @@ where
             IntegrationTime::_800ms => 0b0011,
         };
         let config = self.config.bits & !(0b1111 << 6) | (mask << 6);
-        self.set_config(Config { bits: config }).await?;
+        self.set_config(Config { bits: config })?;
         self.it = it;
         Ok(())
     }
 
     /// Set the gain.
-    #[maybe_async]
-    pub async fn set_gain(&mut self, gain: Gain) -> Result<(), Error<I2C::Error>> {
+    pub fn set_gain(&mut self, gain: Gain) -> Result<(), Error<I2C::Error>> {
         let mask = match gain {
             Gain::One => 0,
             Gain::Two => 1,
@@ -115,15 +110,14 @@ where
             Gain::OneQuarter => 3,
         };
         let config = self.config.bits & !(0b11 << 11) | mask << 11;
-        self.set_config(Config { bits: config }).await?;
+        self.set_config(Config { bits: config })?;
         self.gain = gain;
         Ok(())
     }
 
     /// Set the number of times a threshold crossing must happen consecutively
     /// to trigger an interrupt.
-    #[maybe_async]
-    pub async fn set_fault_count(&mut self, fc: FaultCount) -> Result<(), Error<I2C::Error>> {
+    pub fn set_fault_count(&mut self, fc: FaultCount) -> Result<(), Error<I2C::Error>> {
         let mask = match fc {
             FaultCount::One => 0,
             FaultCount::Two => 1,
@@ -131,33 +125,29 @@ where
             FaultCount::Eight => 3,
         };
         let config = self.config.bits & !(0b11 << 4) | mask << 4;
-        self.set_config(Config { bits: config }).await
+        self.set_config(Config { bits: config })
     }
 
     /// Enable interrupt generation.
-    #[maybe_async]
-    pub async fn enable_interrupts(&mut self) -> Result<(), Error<I2C::Error>> {
+    pub fn enable_interrupts(&mut self) -> Result<(), Error<I2C::Error>> {
         let config = self.config.with_high(BitFlags::ALS_INT_EN);
-        self.set_config(config).await
+        self.set_config(config)
     }
 
     /// Disable interrupt generation.
-    #[maybe_async]
-    pub async fn disable_interrupts(&mut self) -> Result<(), Error<I2C::Error>> {
+    pub fn disable_interrupts(&mut self) -> Result<(), Error<I2C::Error>> {
         let config = self.config.with_low(BitFlags::ALS_INT_EN);
-        self.set_config(config).await
+        self.set_config(config)
     }
 
     /// Set the ALS high threshold in raw format
-    #[maybe_async]
-    pub async fn set_high_threshold_raw(&mut self, threshold: u16) -> Result<(), Error<I2C::Error>> {
-        Ok(self.write_register(Register::ALS_WH, threshold).await?)
+    pub fn set_high_threshold_raw(&mut self, threshold: u16) -> Result<(), Error<I2C::Error>> {
+        Ok(self.write_register(Register::ALS_WH, threshold)?)
     }
 
     /// Set the ALS low threshold in raw format
-    #[maybe_async]
-    pub async fn set_low_threshold_raw(&mut self, threshold: u16) -> Result<(), Error<I2C::Error>> {
-        Ok(self.write_register(Register::ALS_WL, threshold).await?)
+    pub fn set_low_threshold_raw(&mut self, threshold: u16) -> Result<(), Error<I2C::Error>> {
+        Ok(self.write_register(Register::ALS_WL, threshold)?)
     }
 
     /// Set the ALS high threshold in lux.
@@ -166,10 +156,9 @@ where
     /// the inverse of the compensation formula is applied (this involves
     /// quite some math).
     #[cfg(feature = "lux_as_f32")]
-    #[maybe_async]
-    pub async fn set_high_threshold_lux(&mut self, lux: f32) -> Result<(), Error<I2C::Error>> {
+    pub fn set_high_threshold_lux(&mut self, lux: f32) -> Result<(), Error<I2C::Error>> {
         let raw = self.calculate_raw_threshold_value(lux);
-        self.set_high_threshold_raw(raw).await
+        self.set_high_threshold_raw(raw)
     }
     // TODO make a const-able version for pre-calculating the raw-threshold_lux
 
@@ -179,10 +168,9 @@ where
     /// the inverse of the compensation formula is applied (this involves
     /// quite some math).
     #[cfg(feature = "lux_as_f32")]
-    #[maybe_async]
-    pub async fn set_low_threshold_lux(&mut self, lux: f32) -> Result<(), Error<I2C::Error>> {
+    pub fn set_low_threshold_lux(&mut self, lux: f32) -> Result<(), Error<I2C::Error>> {
         let raw = self.calculate_raw_threshold_value(lux);
-        self.set_low_threshold_raw(raw).await
+        self.set_low_threshold_raw(raw)
     }
 
     /// Calculate raw value for threshold applying compensation if necessary.
@@ -199,8 +187,7 @@ where
     }
 
     /// Enable the power-saving mode
-    #[maybe_async]
-    pub async fn enable_power_saving(&mut self, psm: PowerSavingMode) -> Result<(), Error<I2C::Error>> {
+    pub fn enable_power_saving(&mut self, psm: PowerSavingMode) -> Result<(), Error<I2C::Error>> {
         let mask = match psm {
             PowerSavingMode::One => 0,
             PowerSavingMode::Two => 1,
@@ -208,30 +195,27 @@ where
             PowerSavingMode::Four => 3,
         };
         let value = BitFlags::PSM_EN | mask << 1;
-        Ok(self.write_register(Register::PSM, value).await?)
+        Ok(self.write_register(Register::PSM, value)?)
     }
 
     /// Disable the power-saving mode
-    #[maybe_async]
-    pub async fn disable_power_saving(&mut self) -> Result<(), Error<I2C::Error>> {
-        Ok(self.write_register(Register::PSM, 0).await?)
+    pub fn disable_power_saving(&mut self) -> Result<(), Error<I2C::Error>> {
+        Ok(self.write_register(Register::PSM, 0)?)
     }
 
-    #[maybe_async]
-    async fn set_config(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
-        self.write_register(Register::ALS_CONF, config.bits).await?;
+    fn set_config(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
+        self.write_register(Register::ALS_CONF, config.bits)?;
         self.config = config;
         Ok(())
     }
 
-    #[maybe_async]
-    async fn write_register(
+    fn write_register(
         &mut self,
         register: u8,
         value: u16,
     ) -> Result<(), <I2C as ErrorType>::Error> {
         self.i2c
-            .write(DEVICE_ADDRESS, &[register, value as u8, (value >> 8) as u8]).await
+            .write(DEVICE_ADDRESS, &[register, value as u8, (value >> 8) as u8])
     }
 }
 
@@ -245,9 +229,8 @@ where
     /// Note that the interrupt status is updated at the same rate as the
     /// measurements. Once triggered, flags will stay true until a measurement
     /// is taken which does not exceed the threshold.
-    #[maybe_async]
-    pub async fn read_interrupt_status(&mut self) -> Result<InterruptStatus, Error<I2C::Error>> {
-        let data = self.read_register(Register::ALS_INT).await?;
+    pub fn read_interrupt_status(&mut self) -> Result<InterruptStatus, Error<I2C::Error>> {
+        let data = self.read_register(Register::ALS_INT)?;
         Ok(InterruptStatus {
             was_too_low: (data & BitFlags::INT_TH_LOW) != 0,
             was_too_high: (data & BitFlags::INT_TH_HIGH) != 0,
@@ -255,9 +238,8 @@ where
     }
 
     /// Read ALS high resolution output data in raw format
-    #[maybe_async]
-    pub async fn read_raw(&mut self) -> Result<u16, Error<I2C::Error>> {
-        self.read_register(Register::ALS).await
+    pub fn read_raw(&mut self) -> Result<u16, Error<I2C::Error>> {
+        self.read_register(Register::ALS)
     }
 
     /// Read ALS high resolution output data converted to lux
@@ -266,9 +248,8 @@ where
     /// the following compensation formula is applied:
     /// `lux = 6.0135e-13*(lux^4) - 9.3924e-9*(lux^3) + 8.1488e-5*(lux^2) + 1.0023*lux`
     #[cfg(feature = "lux_as_f32")]
-    #[maybe_async]
-    pub async fn read_lux(&mut self) -> Result<f32, Error<I2C::Error>> {
-        let raw = self.read_register(Register::ALS).await?;
+    pub fn read_lux(&mut self) -> Result<f32, Error<I2C::Error>> {
+        let raw = self.read_register(Register::ALS)?;
         Ok(self.convert_raw_als_to_lux(raw))
     }
 
@@ -286,16 +267,14 @@ where
     }
 
     /// Read white channel measurement
-    #[maybe_async]
-    pub async fn read_white(&mut self) -> Result<u16, Error<I2C::Error>> {
-        self.read_register(Register::WHITE).await
+    pub fn read_white(&mut self) -> Result<u16, Error<I2C::Error>> {
+        self.read_register(Register::WHITE)
     }
 
-    #[maybe_async]
-    async fn read_register(&mut self, register: u8) -> Result<u16, Error<I2C::Error>> {
+    fn read_register(&mut self, register: u8) -> Result<u16, Error<I2C::Error>> {
         let mut data = [0; 2];
         self.i2c
-            .write_read(DEVICE_ADDRESS, &[register], &mut data).await
+            .write_read(DEVICE_ADDRESS, &[register], &mut data)
             .map_err(Error::I2C)
             .and(Ok(u16::from(data[0]) | u16::from(data[1]) << 8))
     }
