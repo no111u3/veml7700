@@ -48,7 +48,7 @@ VEML7700 expose interface over I2C.
 ## Support
 
 For questions, issues, feature requests, and other changes, please file an
-[issue in the github project](https://github.com/no111u3/veml7700/issues).
+[issue in the github project](https://github.com/nisembedded/veml7700/issues).
 
 ## License
 
