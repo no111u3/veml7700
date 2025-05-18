@@ -1,18 +1,18 @@
 [package]
 name = "veml7700"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 categories = ["embedded", "hardware-support", "no-std"]
 authors = [
     "Diego Barrios Romero <eldruin@gmail.com>",
-    "Boris Vinogradov <no111u3@gmail.com>",
+    "Boris Vinogradov <nisembedded@gmail.com>",
 ]
 description = "Platform-agnostic Rust driver for the VEML7700 High Accuracy Ambient Light Sensor"
 documentation = "https://docs.rs/veml7700"
 keywords = ["als", "ambient", "light", "sensor", "embedded-hal-driver"]
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/no111u3/veml7700"
+repository = "https://github.com/nisembedded/veml7700"
 exclude = ["memory.x", ".cargo", "Embed.toml"]
 
 [features]
@@ -32,7 +32,7 @@ cortex-m = "0.7.7"
 cortex-m-rt = "0.7.3"
 panic-halt = "0.2.0"
 stm32f4xx-hal = { version = "0.20.0", features = ["stm32f401"] }
-rtt-target = "0.5.0"
+rtt-target = "0.6.1"
 # panic-rtt-target = { version = "0.1.0", features = ["cortex-m"] }
 
 [profile.release]
