@@ -32,7 +32,7 @@ cortex-m = "0.7.7"
 cortex-m-rt = "0.7.3"
 panic-halt = "0.2.0"
 stm32f4xx-hal = { version = "0.20.0", features = ["stm32f401"] }
-rtt-target = "0.5.0"
+rtt-target = "0.6.1"
 # panic-rtt-target = { version = "0.1.0", features = ["cortex-m"] }
 
 [profile.release]
