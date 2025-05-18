@@ -1,0 +1,107 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: 1.75.0
+
+jobs:
+  build:
+    name: Build with different feature configurations
+    runs-on: ubuntu-latest
+    env:
+        RUSTFLAGS: "-D warnings"
+
+    strategy:
+      matrix:
+        features:
+          - ""
+          - "lux_as_f32"
+          - "lux_as_u32"
+          - "is_sync"
+          - "is_sync,lux_as_f32"
+          - "is_sync,lux_as_u32"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust ${{ env.RUST_VERSION }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+
+      - name: Display build configuration
+        run: |
+          echo "Rust version:"
+          rustc --version
+          echo "Cargo version:"
+          cargo --version
+          echo "Building with features: ${{ matrix.features }}"
+
+      - name: Build with features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target thumbv7em-none-eabihf --no-default-features ${{ matrix.features != '' && format('--features {0}', matrix.features) || '' }} --release
+
+  build-examples:
+    name: Build examples
+    runs-on: ubuntu-latest
+    env:
+        RUSTFLAGS: "-D warnings"
+
+    strategy:
+      matrix:
+        features:
+          - "is_sync,lux_as_f32"
+          - "is_sync,lux_as_u32"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust ${{ env.RUST_VERSION }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+
+      - name: Build examples with features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --examples --target thumbv7em-none-eabihf --no-default-features ${{ matrix.features != '' && format('--features {0}', matrix.features) || '' }} --release
+
+  check:
+    name: Rust formatting and linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust ${{ env.RUST_VERSION }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          target: thumbv7em-none-eabihf
+          components: rustfmt, clippy
+          override: true
+          profile: minimal
+
+      # - name: Check formatting
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: fmt
+      #     args: --all -- --check
+
+      - name: Check with Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --target thumbv7em-none-eabihf -- -D warnings 
